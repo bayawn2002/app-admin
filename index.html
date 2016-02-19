@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head>
+  <title>Angular Forms</title>
+
+  <!-- LOAD BOOTSTRAP CSS -->
+  <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+
+  <!-- LOAD JQUERY -->
+  <!-- when building an angular app, you generally DO NOT want to use jquery -->
+  <!-- we are breaking this rule here because jQuery's $.param will help us send data to our PHP script so that PHP can recognize it -->
+  <!-- this is jQuery's only use. avoid it in Angular apps and if anyone has tips on how to send data to a PHP script w/o jQuery, please state it in the comments -->
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.2.0/angular.min.js"></script>
+  <!-- PROCESS FORM WITH AJAX (OLD) -->
+  <script>
+    var formApp = angular.module('formApp', []);
+
+    formApp.directive('fileModel', ['$parse', function ($parse) {
+      return {
+        restrict: 'A',
+        link: function(scope, element, attrs) {
+          var model = $parse(attrs.fileModel);
+          var modelSetter = model.assign;
+
+          element.bind('change', function(){
+            scope.$apply(function(){
+              modelSetter(scope, element[0].files[0]);
+            });
+          });
+        }
+      };
+    }]);
+
+    formApp.service('fileUpload', ['$http', function ( $http) {
+      this.uploadFileToUrl = function(file, data, uploadUrl){
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('word', data.wordText);
+        fd.append('viet_text', data.vietWord);
+
+        $http.post(uploadUrl, fd, {
+          transformRequest: angular.identity,
+          headers: {'Content-Type': undefined}
+        })
+        .success(function(){
+        })
+        .error(function(){
+        });
+      }
+    }]);
+
+    formApp.controller('formController',  ['$scope',  'fileUpload', function($scope, fileUpload){
+      $scope.formData = {
+        wordText: "",
+        vietWord: ""//,
+      //  file: null
+      };
+
+      $scope.submitForm = function(){
+        var file = $scope.myFile;
+        var data = $scope.formData;
+        //console.log($scope.myFile.name);
+        var uploadUrl = "http://ec2-52-36-177-33.us-west-2.compute.amazonaws.com:3000/putfiles";
+        fileUpload.uploadFileToUrl(file, data, uploadUrl);
+        /*$http({
+          method : 'POST',
+          url: 'http://ec2-52-36-177-33.us-west-2.compute.amazonaws.com:3000/putfiles',
+          data: $scope.formData,
+          headers: { 'Content-Type' : 'multipart/form-data'}
+        })
+          .success(function(data){
+            console.log(data);
+          });*/
+      };
+    }]);
+  </script>
+</head>
+<body>
+  <div ng-app="formApp" class="container">
+    <div class="col-md-6 col-md-offset-3">
+
+      <!-- PAGE TITLE -->
+      <div class="page-header">
+        <h1><span class="glyphicon glyphicon-tower"></span>File upload</h1>
+      </div>
+
+      <!-- SHOW ERROR/SUCCESS MESSAGES -->
+      <div id="messages"></div>
+
+      <!-- FORM -->
+      <form ng-controller="formController" ng-submit="submitForm()">
+        <!-- NAME -->
+        <div id="name-group" class="form-group">
+          <label>Word</label>
+          <input type="text" name="word_text" class="form-control" placeholder="" ng-model="formData.wordText">
+        </div>
+
+        <!-- SUPERHERO NAME -->
+        <div id="superhero-group" class="form-group">
+          <label>Viet Word</label>
+          <input type="text" name="viet_word" class="form-control" placeholder="" ng-model="formData.vietWord">
+        </div>
+
+        <div id="file-group" class="form-group">
+          <label>File</label>
+          <input type="file" name="upl" class="form-control" placeholder="" file-model="myFile">
+        </div>
+
+        <!-- SUBMIT BUTTON -->
+        <button type="submit" ngClick="Submit" class="btn btn-success btn-lg btn-block">
+          <span class="glyphicon glyphicon-flash"></span> Submit!
+        </button>
+      </form>
+
+    </div>
+  </div>
+</body>
+</html>
